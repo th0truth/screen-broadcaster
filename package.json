@@ -1,0 +1,30 @@
+{
+  "name": "screen-broadcast",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "nodemon src/server.ts",
+    "build-addon": "cd addon && node-gyp rebuild"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@types/node": "^22.14.0",
+    "express": "^5.1.0",
+    "typescript": "^5.8.3",
+    "ws": "^8.18.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.1",
+    "@types/ws": "^8.18.1",
+    "node-addon-api": "^8.3.1",
+    "node-gyp": "^11.2.0",
+    "nodemon": "^3.1.9",
+    "sharp": "^0.34.1",
+    "ts-node": "^10.9.2"
+  }
+}
