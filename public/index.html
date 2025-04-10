@@ -31,7 +31,8 @@
         </div>
         </main>
     <script>
-        const ws = new WebSocket("ws://localhost:8080");
+        // const ws = new WebSocket("ws://localhost:8080");
+        const ws = new WebSocket(`ws://${location.host}/ws/`);
         const canvas = document.getElementById("broadcast");
         const ctx = canvas.getContext("2d");
 

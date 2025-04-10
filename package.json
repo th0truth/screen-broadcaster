@@ -6,8 +6,8 @@
     "backend": "node backend/dist/app.js",
     "broadcaster": "node windows/dist/app.js",
     "build:backend": "tsc --build backend",
-    "build:windows": "tsc --build windows",
-    "build:tsc": "npm run build:backend && npm run build:windows",
+    "build:broadcaster": "tsc --build windows",
+    "build:tsc": "npm run build:backend && npm run build:broadcaster",
     "build:addon": "node-gyp rebuild --directory=windows/addon"
   },
   "keywords": [],
