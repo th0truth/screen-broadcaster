@@ -1,28 +1,44 @@
-# Node.js dependencies
+# Node.js
 node_modules/
-
-# TypeScript build output
-dist/
-*.tsbuildinfo
-app.js
-
-# Native addon build output (node-gyp)
-windows/addon/build/
-windows/addon/Release/
-*.node
-
-# Logs
-*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+package-lock.json
+.pnpm-debug.log
 
-# OS-specific
+# TypeScript
+dist/
+*.tsbuildinfo
+
+# Windows addon build (N-API)
+windows/addon/build/
+windows/addon/**/*.obj
+windows/addon/**/*.exp
+windows/addon/**/*.lib
+windows/addon/**/*.pdb
+*.node
+
+# VSCode/IDE configs
+.vscode/
+.idea/
+
+# Visual Studio build files
+*.sln
+*.vcxproj
+*.vcxproj.*
+*.user
+*.suo
+*.ncb
+*.log
+
+# OS system files
 .DS_Store
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-# Environment variables
+# Videos / Output
+*.mp4
+
+# Env files
 .env
-
-# VSCode project settings
-.vscode/
