@@ -140,7 +140,7 @@
     <ClCompile Include="..\screen_capture.cc">
       <ObjectFileName>$(IntDir)\screen_capture.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="C:\Users\the truth\AppData\Roaming\npm\node_modules\node-gyp\src\win_delay_load_hook.cc"/>
+    <ClCompile Include="F:\code\broadcast-screen\node_modules\node-gyp\src\win_delay_load_hook.cc"/>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\node_modules\node-addon-api\nothing.vcxproj">

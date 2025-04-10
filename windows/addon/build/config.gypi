@@ -453,6 +453,16 @@
     "nodedir": "C:\\Users\\the truth\\AppData\\Local\\node-gyp\\Cache\\22.14.0",
     "python": "C:\\Python313\\python.exe",
     "standalone_static_library": 1,
-    "msbuild_path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\MSBuild\\Current\\Bin\\MSBuild.exe"
+    "msbuild_path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\MSBuild\\Current\\Bin\\MSBuild.exe",
+    "cache": "C:\\Users\\the truth\\AppData\\Local\\npm-cache",
+    "globalconfig": "C:\\Users\\the truth\\AppData\\Roaming\\npm\\etc\\npmrc",
+    "global_prefix": "C:\\Users\\the truth\\AppData\\Roaming\\npm",
+    "init_module": "C:\\Users\\the truth\\.npm-init.js",
+    "local_prefix": "F:\\code\\broadcast-screen",
+    "node_gyp": "C:\\Users\\the truth\\AppData\\Roaming\\npm\\node_modules\\npm\\node_modules\\node-gyp\\bin\\node-gyp.js",
+    "npm_version": "11.2.0",
+    "prefix": "C:\\Users\\the truth\\AppData\\Roaming\\npm",
+    "userconfig": "C:\\Users\\the truth\\.npmrc",
+    "user_agent": "npm/11.2.0 node/v22.14.0 win32 x64 workspaces/false"
   }
 }

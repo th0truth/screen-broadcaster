@@ -49,4 +49,3 @@ ws.on("message", (msg) => {
 ws.on("close", () => {
     console.log("[+] Disconnected from backend");
 });
-//# sourceMappingURL=app.js.map
