@@ -16,4 +16,4 @@ RUN npm run build:backend
 
 EXPOSE 8080
 
-CMD ["node", "backend/dist/app.js"]
+CMD ["node", "app/backend/dist/app.js"]
