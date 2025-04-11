@@ -1,7 +1,7 @@
 {
   "name": "screen-broadcast",
   "version": "1.0.0",
-  "main": "server.js",
+  "main": "backend.js",
   "scripts": {
     "backend": "node backend/dist/app.js",
     "broadcaster": "node windows/dist/app.js",
