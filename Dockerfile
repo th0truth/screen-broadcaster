@@ -14,6 +14,20 @@ COPY backend/ ./backend
 RUN npm install
 RUN npm run build:backend
 
-EXPOSE 8080
+FROM nginx:alpine
 
-CMD ["node", "app/backend/dist/app.js"]
+COPY --from=build /app/backend/dist /app/backend/dist
+COPY --from=build /app/node_modules /app/node_modules
+
+COPY frontend/ /usr/share/nginx/html/
+
+# nginx conf
+COPY nginx/nginx.conf /etc/nginx/nginx.conf
+COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+
+# add node.js server
+COPY backend/ /app/backend
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+CMD ["/entrypoint.sh"]
