@@ -1,6 +1,6 @@
 import { WebSocketServer, WebSocket } from "ws";
 
-const PORT = parseInt(process.env.PORT || "10000");
+const PORT = parseInt(process.env.PORT || "8080");
 const wss = new WebSocketServer({ port: PORT });
 console.log(`[WS] Listening on port ${PORT}`);
 

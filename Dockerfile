@@ -30,6 +30,6 @@ COPY backend/ /app/backend
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-EXPOSE 10000
+EXPOSE 80
 
 CMD ["/entrypoint.sh"]
