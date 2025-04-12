@@ -59,6 +59,21 @@ const stopTrafficMonitoring = () => {
     }
 };
 
+const updateBroadcasterState = () => {
+    let broadcasterState;
+    if (!broadcaster || broadcaster.readyState !== WebSocket.OPEN) return;
+    if (clients.size === 0) {
+        broadcasterState = "STOP";
+        console.log(
+            "[INFO] No clients connected. Sending STOP to broadcaster."
+        );
+    } else {
+        console.log("[INFO] Clients connected. Sending START to broadcaster.");
+        broadcasterState = "START";
+    }
+    broadcaster.send(JSON.stringify({ broadcasterState }));
+};
+
 wss.on("connection", (ws, req) => {
     ws.once("message", (msg: RawData) => {
         const { size, text } = processMessage(msg);
@@ -89,6 +104,7 @@ wss.on("connection", (ws, req) => {
         } else if (text === "CLIENT") {
             clients.add(ws);
             console.log("[+] Client connected");
+            updateBroadcasterState();
 
             ws.on("message", (msg: RawData) => {
                 const { size } = processMessage(msg);
@@ -102,6 +118,7 @@ wss.on("connection", (ws, req) => {
             ws.on("close", () => {
                 clients.delete(ws);
                 console.log("[-] Client disconnected");
+                updateBroadcasterState();
             });
         } else {
             ws.close();
