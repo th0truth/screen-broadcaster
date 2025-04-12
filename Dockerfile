@@ -4,8 +4,8 @@ FROM node:18-alpine as build
 WORKDIR /app
 
 # Install app dependencies
-COPY package*.json ./
-COPY tsconfig.base.json ./
+COPY package*.json tsconfig*.json ./
+COPY backend/ ./backend
 
 # Bundle app source
 COPY backend/ ./backend
@@ -14,20 +14,14 @@ COPY backend/ ./backend
 RUN npm install
 RUN npm run build:backend
 
-FROM nginx:alpine
+FROM node:18-alpine
 
-COPY --from=build /app/backend/dist /app/backend/dist
-COPY --from=build /app/node_modules /app/node_modules
+WORKDIR /app
 
-COPY frontend/ /usr/share/nginx/html/
+COPY --from=build /app/backend/dist ./backend/dist
+COPY --from=build /app/node_modules ./node_modules
+COPY index.html ./
 
-# nginx conf
-COPY nginx/nginx.conf /etc/nginx/nginx.conf
-COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+EXPOSE 8080
 
-# add node.js server
-COPY backend/ /app/backend
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
-CMD ["/entrypoint.sh"]
+CMD ["node", "backend/dist/app.js"]

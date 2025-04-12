@@ -1,22 +1,21 @@
 import express from "express";
 import { createServer } from "http";
 import { WebSocketServer, WebSocket } from "ws";
+import path from "path";
 
-const PORT = parseInt(process.env.PORT || "8080");
 const app = express();
 const server = createServer(app);
+const wss = new WebSocketServer({ server });
 
-const wss = new WebSocketServer({ noServer: true });
 const clients: Set<WebSocket> = new Set();
-let wSocket: WebSocket | null = null;
+let broadcaster: WebSocket | null = null;
 
 wss.on("connection", (ws, req) => {
-  ws.once("message", (message) => {
-    const msg = message.toString();
-
-    if (msg === "BACKEND") {
-      console.log("[+] Backend connected");
-      wSocket = ws;
+  ws.once("message", (msg) => {
+    const text = msg.toString();
+    if (text === "BACKEND") {
+      broadcaster = ws;
+      console.log("[+] Broadcaster connected");
 
       ws.on("message", (frame) => {
         for (const client of clients) {
@@ -27,46 +26,34 @@ wss.on("connection", (ws, req) => {
       });
 
       ws.on("close", () => {
-        console.log("[+] Backend disconnected");
-        wSocket = null;
+        broadcaster = null;
+        console.log("[-] Broadcaster disconnected");
       });
-
-    } else if (msg === "CLIENT") {
+    } else if (text === "CLIENT") {
       clients.add(ws);
       console.log("[+] Client connected");
 
       ws.on("message", (msg) => {
-        if (wSocket?.readyState === WebSocket.OPEN) {
-          wSocket.send(msg);
+        if (broadcaster?.readyState === WebSocket.OPEN) {
+          broadcaster.send(msg);
         }
       });
 
       ws.on("close", () => {
         clients.delete(ws);
-        console.log("[+] Client disconnected");
+        console.log("[-] Client disconnected");
       });
-
     } else {
-      console.log("Unknown connection type:", msg);
       ws.close();
     }
   });
 });
 
-server.on("upgrade", (req, socket, head) => {
-  if (req.url === "/ws") {
-    wss.handleUpgrade(req, socket, head, (ws) => {
-      wss.emit("connection", ws, req);
-    });
-  } else {
-    socket.destroy();
-  }
-});
-
 app.get("/", (_, res) => {
-  res.send("Screen broadcast backend is running.");
+  res.sendFile(path.join(__dirname, "../../index.html"));
 });
 
+const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
-  console.log(`[HTTP] Listening on port ${PORT}`);
+  console.log(`[HTTP] Server running on port ${PORT}`);
 });
