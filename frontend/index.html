@@ -4,50 +4,71 @@
         <meta charset="UTF-8" />
         <title>Broadcast Screen</title>
         <style>
+            html,
             body {
                 padding: 0;
                 margin: 0;
+                height: 100%;
+                overflow: hidden;
                 background: #000000;
             }
-            canvas {
+            .container {
                 max-width: 2560px;
-                max-height: 1440px;
+                margin-left: 20px;
+                margin-right: 20px;
+            }
+            .broadcast-wrapper {
+                width: 100%;
+                max-width: 2560px;
                 background: #090909;
             }
-            .main {
-                margin: 10px 5px;
-                display: flex;
-                flex-direction: column;
-                row-gap: 10px;
+            .broadcast {
+                width: 100%;
+                height: auto;
+                display: block;
             }
             .player {
-                display: flex;
+                padding: 10px;
+                margin: 10px 0;
+                background: #0a0909;
+            }
+            .player .wrapper {
                 justify-content: right;
-                padding: 20px 30px;
-                border-radius: 10px;
-                background: #0f0f0f;
+                align-items: center;
+                display: flex;
             }
             .player .menu {
                 background: #000000;
                 color: #ffffff;
                 border: none;
             }
+
+            @media screen and (max-width: 980px) {
+                .container {
+                    margin-left: auto;
+                    margin-right: auto;
+                }
+            }
         </style>
     </head>
     <body>
         <main class="main">
-            <canvas id="broadcast"></canvas>
-            <div class="player">
-                <div>
-                    <select id="monitorIndex" class="menu">
-                        <option value="0" selected>primary</option>
-                        <option value="1">second</option>
-                    </select>
-                    <select id="resolution" class="menu">
-                        <option value="1440">1440p</option>
-                        <option value="1080" selected>1080p</option>
-                        <option value="720">720p</option>
-                    </select>
+            <div class="container">
+                <div class="broadcast-wrapper">
+                    <canvas id="broadcast" class="broadcast"></canvas>
+                </div>
+                <div class="player">
+                    <div class="wrapper">
+                        <select id="monitorIndex" class="menu">
+                            <option value="0" selected>primary</option>
+                            <option value="1">second</option>
+                        </select>
+                        <select id="resolution" class="menu">
+                            <option value="1440">1440p</option>
+                            <option value="1080" selected>1080p</option>
+                            <option value="720">720p</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </main>
