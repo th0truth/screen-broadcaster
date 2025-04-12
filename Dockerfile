@@ -20,7 +20,7 @@ WORKDIR /app
 
 COPY --from=build /app/backend/dist ./backend/dist
 COPY --from=build /app/node_modules ./node_modules
-COPY index.html ./
+COPY frontend/index.html ./frontend/index.html
 
 EXPOSE 8080
 
