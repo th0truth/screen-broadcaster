@@ -11,16 +11,10 @@ dist/
 *.tsbuildinfo
 
 # docker
-
 docker-compose.yaml
 
 # Windows addon build (N-API)
 windows/
-# windows/addon/build/
-# windows/addon/**/*.obj
-# windows/addon/**/*.exp
-# windows/addon/**/*.lib
-# windows/addon/**/*.pdb
 *.node
 
 # VSCode/IDE configs
@@ -43,7 +37,9 @@ ehthumbs.db
 Desktop.ini
 
 # Videos / Output
+videos/
 *.mp4
+*.avi
 
 # Env files
 .env
