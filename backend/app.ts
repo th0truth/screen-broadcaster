@@ -25,11 +25,6 @@ wss.on("connection", (ws, req) => {
             console.log("[+] Broadcaster connected");
 
             ws.on("message", (frame) => {
-                totalBytes +=
-                    frame instanceof Buffer
-                        ? frame.length
-                        : Buffer.byteLength(frame);
-
                 for (const client of clients) {
                     if (client.readyState === WebSocket.OPEN) {
                         client.send(frame);
