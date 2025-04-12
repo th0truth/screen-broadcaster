@@ -60,6 +60,7 @@ wss.on("connection", (ws, req) => {
                 for (const client of clients) {
                     if (client.readyState === WebSocket.OPEN) {
                         client.send(frame);
+                        totalBytesSent += size;
                     }
                 }
             });
