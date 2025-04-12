@@ -60,18 +60,16 @@ const stopTrafficMonitoring = () => {
 };
 
 const updateBroadcasterState = () => {
-    let broadcasterState;
     if (!broadcaster || broadcaster.readyState !== WebSocket.OPEN) return;
     if (clients.size === 0) {
-        broadcasterState = "STOP";
+        broadcaster.send("STOP");
         console.log(
             "[INFO] No clients connected. Sending STOP to broadcaster."
         );
     } else {
         console.log("[INFO] Clients connected. Sending START to broadcaster.");
-        broadcasterState = "START";
+        broadcaster.send("START");
     }
-    broadcaster.send(JSON.stringify({ broadcasterState }));
 };
 
 wss.on("connection", (ws, req) => {
