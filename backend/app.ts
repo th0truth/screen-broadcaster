@@ -9,6 +9,13 @@ const wss = new WebSocketServer({ server });
 
 const clients: Set<WebSocket> = new Set();
 let broadcaster: WebSocket | null = null;
+let totalBytes = 0;
+
+setInterval(() => {
+    const mbps = (totalBytes * 8) / 1_000_000;
+    console.log(`[TRAFFIC]: ${mbps.toFixed(2)} Mbps`);
+    totalBytes = 0;
+}, 1000);
 
 wss.on("connection", (ws, req) => {
     ws.once("message", (msg) => {
@@ -18,6 +25,11 @@ wss.on("connection", (ws, req) => {
             console.log("[+] Broadcaster connected");
 
             ws.on("message", (frame) => {
+                totalBytes +=
+                    frame instanceof Buffer
+                        ? frame.length
+                        : Buffer.byteLength(frame);
+
                 for (const client of clients) {
                     if (client.readyState === WebSocket.OPEN) {
                         client.send(frame);
