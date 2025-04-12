@@ -75,6 +75,7 @@ wss.on("connection", (ws, req) => {
             ws.on("message", (msg: RawData) => {
                 const { size } = processMessage(msg);
                 totalBytesReceived += size;
+                console.log(msg);
 
                 if (broadcaster?.readyState === WebSocket.OPEN) {
                     broadcaster.send(msg);
