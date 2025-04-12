@@ -39,9 +39,9 @@
             <canvas id="broadcast"></canvas>
             <div class="player">
                 <div>
-                    <select id="displayIndex" class="menu">
-                        <option value="1" selected>primary</option>
-                        <option value="2">second</option>
+                    <select id="monitorIndex" class="menu">
+                        <option value="1" selected>0</option>
+                        <option value="2">1</option>
                     </select>
                     <select id="resolution" class="menu">
                         <option value="1440">1440p</option>
@@ -57,12 +57,17 @@
             const ctx = canvas.getContext("2d");
 
             const resolution = document.getElementById("resolution");
+            const monitorIndex = document.getElementById("monitorIndex");
 
             ws.onopen = () => {
                 ws.send("CLIENT");
                 resolution.addEventListener("change", (e) => {
                     const resolution = e.target.value;
                     ws.send(JSON.stringify({ resolution }));
+                });
+                monitorIndex.addEventListener("change", (e) => {
+                    const monitorIndex = e.target.value;
+                    ws.send(JSON.stringify({ monitorIndex }));
                 });
             };
 
