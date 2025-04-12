@@ -3,7 +3,12 @@
   "version": "1.0.0",
   "main": "backend.js",
   "scripts": {
-    "build:backend": "tsc --build backend"
+    "backend": "node backend/dist/app.js",
+    "broadcaster": "node windows/dist/app.js",
+    "build:backend": "tsc --build backend",
+    "build:broadcaster": "tsc --build windows",
+    "build:tsc": "npm run build:backend && npm run build:broadcaster",
+    "build:addon": "node-gyp rebuild --directory=windows/addon"
   },
   "keywords": [],
   "author": "",

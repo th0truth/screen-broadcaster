@@ -1,63 +1,92 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Broadcast Screen</title>
-    <style>
-        body {
-            padding: 0;
-            margin: 0;
-        }
-        canvas {
-            border: 1px solid black;
-        }
-        .main {
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            row-gap: 10px;
-        }
-    </style>
-</head>
-<body>
-    <main class="main">
-        <canvas id="broadcast"></canvas>
-        <div>
-            <select id="resolution">
-                <option value=1440>1440p</option>
-                <option value=1080 selected>1080p</option>
-                <option value=720>720p</option>
-            </select>
-        </div>
-        </main>
-    <script>
-        const ws = new WebSocket(`wss://${location.host}/ws/`);
-        const canvas = document.getElementById("broadcast");
-        const ctx = canvas.getContext("2d");
-
-        ws.onopen = () => {
-            ws.send("CLIENT");
-            document.getElementById("resolution").addEventListener("change", (e) => {
-                const resolution = e.target.value;
-                ws.send(JSON.stringify({resolution}));
-            });
-        };
-
-        ws.onmessage = async (event) => {
-
-            const blob = new Blob([event.data], { type: "image/webp" });
-            try {
-                const bitmap = await createImageBitmap(blob);
-
-                if (canvas.width !== bitmap.width || canvas.height !== bitmap.height) {
-                    canvas.width = bitmap.width;
-                    canvas.height = bitmap.height;
-                }
-                ctx.drawImage(bitmap, 0, 0);
-            } catch (err) {
-                console.error("Failed to decode image:", err);
+    <head>
+        <meta charset="UTF-8" />
+        <title>Broadcast Screen</title>
+        <style>
+            body {
+                padding: 0;
+                margin: 0;
+                background: #000000;
             }
-        };
-    </script>
-</body>
+            canvas {
+                max-width: 2560px;
+                max-height: 1440px;
+                background: #090909;
+            }
+            .main {
+                margin: 10px 5px;
+                display: flex;
+                flex-direction: column;
+                row-gap: 10px;
+            }
+            .player {
+                text-align: right;
+                padding: 20px 30px;
+                border-radius: 10px;
+                background: #0f0f0f;
+            }
+            .player .menu {
+                background: #000000;
+                color: #ffffff;
+                border: none;
+            }
+        </style>
+    </head>
+    <body>
+        <main class="main">
+            <canvas id="broadcast"></canvas>
+            <div class="player">
+                <div>
+                    <select id="displayIndex" class="menu">
+                        <option value="1" selected>primary</option>
+                        <option value="2">second</option>
+                    </select>
+                    <select id="resolution" class="menu">
+                        <option value="1440">1440p</option>
+                        <option value="1080" selected>1080p</option>
+                        <option value="720">720p</option>
+                    </select>
+                </div>
+            </div>
+        </main>
+        <script>
+            const ws = new WebSocket(`wss://${location.host}/ws/`);
+            const canvas = document.getElementById("broadcast");
+            const ctx = canvas.getContext("2d");
+
+            const resolution = document.getElementById("resolution");
+            const displayIndex = document.getElementById("displayIndex");
+
+            ws.onopen = () => {
+                ws.send("CLIENT");
+                resolution.addEventListener("change", (e) => {
+                    const resolution = e.target.value;
+                    ws.send(JSON.stringify({ resolution }));
+                });
+                displayIndex.getElementById("change", (e) => {
+                    const displayIndex = e.target;
+                    ws.send(JSON.stringify({ displayIndex }));
+                });
+            };
+
+            ws.onmessage = async (event) => {
+                const blob = new Blob([event.data], { type: "image/webp" });
+                try {
+                    const bitmap = await createImageBitmap(blob);
+
+                    if (
+                        canvas.width !== bitmap.width ||
+                        canvas.height !== bitmap.height
+                    ) {
+                        canvas.width = bitmap.width;
+                        canvas.height = bitmap.height;
+                    }
+                    ctx.drawImage(bitmap, 0, 0);
+                } catch (err) {
+                    console.error("Failed to decode image:", err);
+                }
+            };
+        </script>
+    </body>
 </html>
