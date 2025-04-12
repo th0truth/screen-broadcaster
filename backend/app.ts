@@ -1,6 +1,6 @@
 import express from "express";
 import { createServer } from "http";
-import { WebSocketServer, WebSocket } from "ws";
+import { WebSocketServer, WebSocket, RawData } from "ws";
 import path from "path";
 
 const app = express();
@@ -9,22 +9,54 @@ const wss = new WebSocketServer({ server });
 
 const clients: Set<WebSocket> = new Set();
 let broadcaster: WebSocket | null = null;
-let totalBytes = 0;
+
+let totalBytesSent = 0;
+let totalBytesReceived = 0;
+
+const processMessage = (msg: RawData) => {
+    const isBuffer = Buffer.isBuffer(msg);
+    const isArray = Array.isArray(msg);
+    const size = isBuffer
+        ? msg.length
+        : isArray
+        ? msg.reduce((sum, buf) => sum + buf.length, 0)
+        : Buffer.from(msg).length;
+    const text = isBuffer
+        ? msg.toString()
+        : isArray
+        ? Buffer.concat(msg).toString()
+        : Buffer.from(msg).toString();
+    return { size, text };
+};
 
 setInterval(() => {
-    const mbps = (totalBytes * 8) / 1_000_000;
-    console.log(`[TRAFFIC]: ${mbps.toFixed(2)} Mbps`);
-    totalBytes = 0;
+    const mbSent = (totalBytesSent / (1024 * 1024)).toFixed(2);
+    const mbReceived = (totalBytesReceived / (1024 * 1024)).toFixed(2);
+    const mbitSentPerSec = ((totalBytesSent * 8) / (1024 * 1024)).toFixed(2);
+    const mbitReceivedPerSec = (
+        (totalBytesReceived * 8) /
+        (1024 * 1024)
+    ).toFixed(2);
+    console.log(
+        `[TRAFFIC] Sent: ${mbSent} MB (${mbitSentPerSec} Mbit/s), Received: ${mbReceived} MB (${mbitReceivedPerSec} Mbit/s)`
+    );
+    totalBytesSent = 0;
+    totalBytesReceived = 0;
 }, 1000);
 
 wss.on("connection", (ws, req) => {
-    ws.once("message", (msg) => {
-        const text = msg.toString();
+    ws.once("message", (msg: RawData) => {
+        const { size, text } = processMessage(msg);
+        totalBytesReceived += size;
+
         if (text === "BACKEND") {
             broadcaster = ws;
             console.log("[+] Broadcaster connected");
 
-            ws.on("message", (frame) => {
+            ws.on("message", (frame: RawData) => {
+                const { size } = processMessage(frame);
+                totalBytesReceived += size;
+
                 for (const client of clients) {
                     if (client.readyState === WebSocket.OPEN) {
                         client.send(frame);
@@ -40,7 +72,10 @@ wss.on("connection", (ws, req) => {
             clients.add(ws);
             console.log("[+] Client connected");
 
-            ws.on("message", (msg) => {
+            ws.on("message", (msg: RawData) => {
+                const { size } = processMessage(msg);
+                totalBytesReceived += size;
+
                 if (broadcaster?.readyState === WebSocket.OPEN) {
                     broadcaster.send(msg);
                 }
