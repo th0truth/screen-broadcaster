@@ -12,6 +12,7 @@ let broadcaster: WebSocket | null = null;
 
 let totalBytesSent = 0;
 let totalBytesReceived = 0;
+let trafficInterval: NodeJS.Timeout | null = null;
 
 const processMessage = (msg: RawData) => {
     const isBuffer = Buffer.isBuffer(msg);
@@ -29,20 +30,34 @@ const processMessage = (msg: RawData) => {
     return { size, text };
 };
 
-setInterval(() => {
-    const mbSent = (totalBytesSent / (1024 * 1024)).toFixed(2);
-    const mbReceived = (totalBytesReceived / (1024 * 1024)).toFixed(2);
-    const mbitSentPerSec = ((totalBytesSent * 8) / (1024 * 1024)).toFixed(2);
-    const mbitReceivedPerSec = (
-        (totalBytesReceived * 8) /
-        (1024 * 1024)
-    ).toFixed(2);
-    console.log(
-        `[TRAFFIC] Sent: ${mbSent} MB (${mbitSentPerSec} Mbit/s), Received: ${mbReceived} MB (${mbitReceivedPerSec} Mbit/s)`
-    );
-    totalBytesSent = 0;
-    totalBytesReceived = 0;
-}, 1000);
+const startTrafficMonitoring = () => {
+    if (!trafficInterval) {
+        trafficInterval = setInterval(() => {
+            const mbSent = (totalBytesSent / (1024 * 1024)).toFixed(2);
+            const mbReceived = (totalBytesReceived / (1024 * 1024)).toFixed(2);
+            const mbitSentPerSec = (
+                (totalBytesSent * 8) /
+                (1024 * 1024)
+            ).toFixed(2);
+            const mbitReceivedPerSec = (
+                (totalBytesReceived * 8) /
+                (1024 * 1024)
+            ).toFixed(2);
+            console.log(
+                `[TRAFFIC] Sent: ${mbSent} MB (${mbitSentPerSec} Mbit/s), Received: ${mbReceived} MB (${mbitReceivedPerSec} Mbit/s)`
+            );
+            totalBytesSent = 0;
+            totalBytesReceived = 0;
+        }, 1000);
+    }
+};
+
+const stopTrafficMonitoring = () => {
+    if (trafficInterval) {
+        clearInterval(trafficInterval);
+        trafficInterval = null;
+    }
+};
 
 wss.on("connection", (ws, req) => {
     ws.once("message", (msg: RawData) => {
@@ -52,6 +67,7 @@ wss.on("connection", (ws, req) => {
         if (text === "BACKEND") {
             broadcaster = ws;
             console.log("[+] Broadcaster connected");
+            startTrafficMonitoring();
 
             ws.on("message", (frame: RawData) => {
                 const { size } = processMessage(frame);
@@ -67,6 +83,7 @@ wss.on("connection", (ws, req) => {
 
             ws.on("close", () => {
                 broadcaster = null;
+                stopTrafficMonitoring();
                 console.log("[-] Broadcaster disconnected");
             });
         } else if (text === "CLIENT") {
@@ -76,7 +93,6 @@ wss.on("connection", (ws, req) => {
             ws.on("message", (msg: RawData) => {
                 const { size } = processMessage(msg);
                 totalBytesReceived += size;
-                console.log(msg);
 
                 if (broadcaster?.readyState === WebSocket.OPEN) {
                     broadcaster.send(msg);

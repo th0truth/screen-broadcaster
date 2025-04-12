@@ -21,7 +21,8 @@
                 row-gap: 10px;
             }
             .player {
-                text-align: right;
+                display: flex;
+                justify-content: right;
                 padding: 20px 30px;
                 border-radius: 10px;
                 background: #0f0f0f;
@@ -56,17 +57,12 @@
             const ctx = canvas.getContext("2d");
 
             const resolution = document.getElementById("resolution");
-            const displayIndex = document.getElementById("displayIndex");
 
             ws.onopen = () => {
                 ws.send("CLIENT");
                 resolution.addEventListener("change", (e) => {
                     const resolution = e.target.value;
                     ws.send(JSON.stringify({ resolution }));
-                });
-                displayIndex.getElementById("change", (e) => {
-                    const displayIndex = e.target;
-                    ws.send(JSON.stringify({ displayIndex }));
                 });
             };
 
