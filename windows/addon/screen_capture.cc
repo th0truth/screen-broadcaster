@@ -1,126 +1,118 @@
-#include <napi.h>
-#include <windows.h>
-#include <wingdi.h>
-#include <cstdint>
-#include <immintrin.h>
+#include "screen.h"
 
-using namespace Napi;
+// Setup monitors 
+std::vector<MonitorInfo> monitors;
+BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC, LPRECT rect, LPARAM) {
+    monitors.push_back({hMonitor, *rect});
+    return TRUE;
+}
 
-// capture second monitor
+void InitMonitors() {
+    monitors.clear();
+    EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, 0);
+}
 
-Value ScreenCapture(const CallbackInfo& info) {
-    Env env = info.Env();
-    
-    // get screen resolution
-    HDC ScreenDC = GetDC(NULL);
-    if (!ScreenDC) {
-        Error::New(env, "GetDC failed.").ThrowAsJavaScriptException();
-        return env.Null();
-    }
-
-    int sWidth = GetDeviceCaps(ScreenDC, HORZRES);
-    int sHeight = GetDeviceCaps(ScreenDC, VERTRES);
-    int tWidth = sWidth;
-    int tHeight = sHeight;
-    if (info.Length() > 0 && info[0].IsNumber()){
-        int resolution = info[0].As<Number>().Int32Value();
-        switch (resolution)
-        {
-        case 1440: tWidth = 2560; tHeight = 1440; break;
-        case 1080: tWidth = 1920; tHeight = 1080; break;
-        case 720: tWidth = 1280; tHeight = 720; break;
-        default:
-            Error::New(env, "Invalid resolution format");
-            break;
-        }
-
-        float aspectRation  = static_cast<float>(sWidth) / sHeight;
-        tHeight = static_cast<int>(tWidth / aspectRation);
-    };
-
-    // create compatible DC and bitmap
-    HDC MemoryDC = CreateCompatibleDC(ScreenDC);
-    HBITMAP Bitmap = CreateCompatibleBitmap(ScreenDC, sWidth, sHeight); 
-    SelectObject(MemoryDC, Bitmap);
-    BitBlt(MemoryDC, 0, 0, sWidth, sHeight, ScreenDC, 0, 0, SRCCOPY);
-
-    // create scaled bitmap
-    HDC ScaleDC = CreateCompatibleDC(ScreenDC);
-    HBITMAP ScaledBitmap = CreateCompatibleBitmap(ScreenDC, tWidth, tHeight);
-    SelectObject(ScaleDC, ScaledBitmap);
-    SetStretchBltMode(ScaleDC, HALFTONE);
-    StretchBlt(ScaleDC, 0, 0, tWidth, tHeight,
-               MemoryDC, 0, 0, sWidth, sHeight, SRCCOPY);
-    
-    //  prepare bitmap info (24-bit BGR)
-    BITMAPINFOHEADER bi = {0};
-    bi.biSize = sizeof(BITMAPINFOHEADER);
-    bi.biWidth = tWidth;
-    bi.biHeight = -tHeight;
-    bi.biPlanes = 1;
-    bi.biBitCount = 24;
-    bi.biCompression = BI_RGB;    
-    
-    // calc buffer size
-    size_t bufferSize = tWidth * tHeight * 3; 
-    
-    std::uint8_t* pixelData = static_cast<std::uint8_t*>(_aligned_malloc(bufferSize, 32));
-    // std::uint8_t pixelData(bufferSize);
-    if (!pixelData) {
-        Error::New(env, "Memory allocation failed").ThrowAsJavaScriptException();
-        return env.Null();
-    }
-    
-    // get the pixel data in BGR format
-    if (!GetDIBits(ScaleDC, ScaledBitmap, 0, tHeight, pixelData, (BITMAPINFO*)&bi, DIB_RGB_COLORS)) {
-        _mm_free(pixelData);
-        DeleteObject(ScaledBitmap);
-        DeleteDC(MemoryDC);
-        DeleteDC(ScaleDC);
-        ReleaseDC(NULL, ScreenDC);
-        Error::New(env, "GetDIBits failed.").ThrowAsJavaScriptException();       
-    }
-    
+// BGR to RGB conversion
+void ConvertBGRtoRGB(uint8_t* data, size_t size) {
     const __m128i shuffleMask = _mm_set_epi8(
         15, 14, 13, 12, 9, 10, 11, 6, 7, 8, 3, 4, 5, 0, 1, 2
     );
-    
-    // BGR to RGB conversion using SSSE3 instructions
     size_t i = 0;    
-    size_t sseLimit = (bufferSize >= 16) ? (bufferSize - 15) : 0;
-    for (; i < sseLimit; i += 12) {
-        __m128i chunk = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pixelData + i));
+    size_t sseLimit = size - (size % 12);
+    for (; i + 15 < sseLimit; i += 12) {
+        __m128i chunk = _mm_loadu_si128(reinterpret_cast<const __m128i*>(data + i));
         __m128i shuffled = _mm_shuffle_epi8(chunk, shuffleMask);
-        alignas(16) uint8_t temp[16];
-        _mm_store_si128(reinterpret_cast<__m128i*>(temp), shuffled);
-        memcpy(pixelData + i, temp, 12);
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(data + i), shuffled);
     }
-    for (; i + 2 < bufferSize; i += 3) {
-        std::swap(pixelData[i], pixelData[i + 2]);
+    for (; i + 2 < size; i += 3) {
+        std::swap(data[i], data[i + 2]);
+    }
+}
+
+Value ScreenCapture(const CallbackInfo& info) {
+    Env env = info.Env();
+
+    int tWidth = 0, tHeight = 0;
+    if (info.Length() > 0 || !info[0].IsNumber()) {
+        const int resolution = info[0].As<Number>().Int32Value();
+        for (const auto& res : RESOLUTIONS) {
+            if (resolution == res[1]) {
+                tWidth = res[0];
+                tHeight = res[0];
+                break;
+            }
+        }
+    } else {
+        throw Error::New(env, "Resolution parameter required");
     }
 
-    // cleanup GDI objects
-    DeleteObject(ScaledBitmap);
-    DeleteDC(ScaleDC);
-    DeleteObject(Bitmap);
-    DeleteDC(MemoryDC);
-    ReleaseDC(NULL, ScreenDC);
+    int monitorIndex = 0;
+    if (info.Length() > 1 && info[1].IsNumber()) {
+        monitorIndex = info[1].As<Number>().Int32Value();
+    }
+    InitMonitors();
+    if (monitorIndex < 0  || monitorIndex >= static_cast<int>(monitors.size())) {
+        throw Error::New(env, "Invalid monitor index");
+    }
 
-    // create a Node.js Buffer from the pixel data
-    Buffer<uint8_t> buffer = Buffer<uint8_t>::Copy(env, pixelData, bufferSize);
-    _aligned_free(pixelData);
+    const auto& monitor = monitors[monitorIndex];
+    const int sWidth = monitor.rect.right - monitor.rect.left;
+    const int sHeight = monitor.rect.bottom - monitor.rect.top;
+    tHeight = static_cast<int>(tWidth / (static_cast<float>(sWidth) / sHeight));
     
-    // return an object with width, height, and pixel data
+    // GDI resources
+    ScreenDC screenDC;
+    UniqueHDC memDC(CreateCompatibleDC(screenDC));
+    UniqueHBITMAP bitmap(CreateCompatibleBitmap(screenDC, sWidth, sHeight));
+    if (!memDC || !bitmap) {
+        throw Error::New(env, "Failed to create GDI resources");
+    }
+
+    SelectObject(memDC.get(), bitmap.get());
+    if (!BitBlt(memDC.get(), 0, 0, sWidth, sHeight, screenDC, 
+                monitor.rect.left, monitor.rect.top, SRCCOPY)) {
+        throw Error::New(env, "Screen capture failed");
+    }
+
+    UniqueHDC scaleDC(CreateCompatibleDC(screenDC));
+    UniqueHBITMAP scaledBitmap(CreateCompatibleBitmap(screenDC, tWidth, tHeight));
+    if (!scaleDC || !scaledBitmap) {
+        throw Error::New(env, "Failed to create scaling resources");
+    }
+
+    SelectObject(scaleDC.get(), scaledBitmap.get());
+    SetStretchBltMode(scaleDC.get(), COLORONCOLOR);
+    if (!StretchBlt(scaleDC.get(), 0, 0, tWidth, tHeight,
+                    memDC.get(), 0, 0, sWidth, sHeight, SRCCOPY)) {
+        throw Error::New(env, "Image scaling failed");
+    }
+
+    // Pixel buffer setup
+    BITMAPINFOHEADER bi{sizeof(BITMAPINFOHEADER), tWidth, -tHeight, 1, 24};
+    const size_t bufferSize = tWidth * tHeight * 3;
+    AlignedBuffer pixelData(static_cast<uint8_t*>(_aligned_malloc(bufferSize, 32)));
+    if (!pixelData) {
+        throw Error::New(env, "Memory allocation failed");
+    }
+    
+    // Retrieve pixels
+    if (!GetDIBits(scaleDC.get(), scaledBitmap.get(), 0, tHeight,
+    pixelData.get(), reinterpret_cast<BITMAPINFO*>(&bi), DIB_RGB_COLORS)) {
+        throw Error::New(env, "Failed to get pixel data");
+    }
+
+    // Convert BGR to RGB
+    ConvertBGRtoRGB(pixelData.get(), bufferSize);
+
+    // Create buffer without copy
+    auto finalizer = [](Env, uint8_t* data) { _aligned_free(data); };
+    Buffer<uint8_t> buffer = Buffer<uint8_t>::New(
+        env, pixelData.release(), bufferSize, finalizer);
+    
+    // return an object
     Object result = Object::New(env);
     result.Set("width", Number::New(env, tWidth));
     result.Set("height", Number::New(env, tHeight));
     result.Set("data", buffer);
     return result;
 };
-
-Object Init(Env env, Object exports) {
-    exports.Set("capture", Function::New(env, ScreenCapture));
-    return exports;
-}
-
-NODE_API_MODULE(screen_capture, Init)

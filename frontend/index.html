@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Broadcast Screen</title>
+        <style>
+            html,
+            body {
+                padding: 0;
+                margin: 0;
+                background: #000000;
+            }
+            .container {
+                max-width: 2560px;
+                margin-left: 20px;
+                margin-right: 20px;
+            }
+            .broadcast-wrapper {
+                width: 100%;
+                max-width: 2560px;
+                background: #090909;
+            }
+            .broadcast {
+                width: 100%;
+                height: auto;
+                display: block;
+            }
+            .player {
+                padding: 10px;
+                margin: 10px 0;
+                background: #0a0909;
+            }
+            .player .wrapper {
+                justify-content: right;
+                align-items: center;
+                display: flex;
+            }
+            .player .menu {
+                background: #000000;
+                color: #ffffff;
+                border: none;
+            }
+
+            @media screen and (max-width: 980px) {
+                .container {
+                    margin-left: auto;
+                    margin-right: auto;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <main class="main">
+            <div class="container">
+                <div class="broadcast-wrapper">
+                    <canvas id="broadcast" class="broadcast"></canvas>
+                </div>
+                <div class="player">
+                    <div class="wrapper">
+                        <select id="monitorIndex" class="menu">
+                            <option value="0" selected>primary</option>
+                            <option value="1">second</option>
+                        </select>
+                        <select id="resolution" class="menu">
+                            <option value="1440">1440p</option>
+                            <option value="1080" selected>1080p</option>
+                            <option value="720">720p</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <script>
+            const ws = new WebSocket("ws://localhost:8080");
+            const canvas = document.getElementById("broadcast");
+            const ctx = canvas.getContext("2d");
+
+            const resolution = document.getElementById("resolution");
+            const monitorIndex = document.getElementById("monitorIndex");
+
+            ws.onopen = () => {
+                ws.send("CLIENT");
+                resolution.addEventListener("change", (e) => {
+                    const resolution = e.target.value;
+                    ws.send(JSON.stringify({ resolution }));
+                });
+                monitorIndex.addEventListener("change", (e) => {
+                    const monitorIndex = e.target.value;
+                    ws.send(JSON.stringify({ monitorIndex }));
+                });
+            };
+
+            ws.onmessage = async (event) => {
+                const blob = new Blob([event.data], { type: "image/webp" });
+                try {
+                    const bitmap = await createImageBitmap(blob);
+
+                    if (
+                        canvas.width !== bitmap.width ||
+                        canvas.height !== bitmap.height
+                    ) {
+                        canvas.width = bitmap.width;
+                        canvas.height = bitmap.height;
+                    }
+                    ctx.drawImage(bitmap, 0, 0);
+                } catch (err) {
+                    console.error("Failed to decode image:", err);
+                }
+            };
+        </script>
+    </body>
+</html>
