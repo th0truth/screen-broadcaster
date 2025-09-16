@@ -10,7 +10,7 @@
 # Installation
 
 ```bash
-git clone git@github.com:th0truth/screen-broadcaster.git
+git clone https://github.com/th0truth/screen-broadcaster.git
 cd screen-broadcaster
 ```
 
